@@ -13,7 +13,7 @@ public class WorkingNeuron extends Neuron {
 	
 	public void randomMutation(float mutationRate) {
 		Connection c = connections.get(Helper.randomInt0(connections.size()));
-		c.setWeight(Helper.randomFloat() * 2 * mutationRate - mutationRate);
+		c.setWeight(c.getWeight() + Helper.randomFloat() * 2 * mutationRate - mutationRate);
 	}
 	
 	public void addNeuronConnection(Neuron n, float weight) {

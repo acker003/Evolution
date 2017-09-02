@@ -23,4 +23,11 @@ public class Position {
 		this.y += y;
 	}
 	
+	public Position add(Position pos) {
+		return new Position(x + pos.getX(), y + pos.getY());
+	}
+	
+	public float distance2(Position pos) {
+		return Helper.euclidianDistance(x, y, pos.getX(), pos.getY());
+	}
 }

@@ -43,7 +43,7 @@ public class CalcThread implements Runnable {
 	
 	public void paintCreatures(Painter p) {
 		for (Creature c : new ArrayList<Creature>(creatures)) {
-			p.paintCreature(c.getPos(), c.getColor());
+			p.paintCreature(c);
 		}
 	}
 	

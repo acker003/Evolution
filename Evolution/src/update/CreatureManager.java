@@ -8,6 +8,7 @@ import java.util.Map;
 import creature.Creature;
 import gui.Painter;
 import stuff.Const;
+import stuff.Helper;
 
 public class CreatureManager implements Runnable {
 
@@ -18,14 +19,15 @@ public class CreatureManager implements Runnable {
 	private Thread th;
 	private long sleepTime = Const.SLEEP_TIME_PER_ACT;
 	private Painter painter;
-	
+	private int maxGeneration = 1;
+
 	public CreatureManager(Painter painter) {
 		this.painter = painter;
 		for (int i = 0; i <= Const.MAX_CREATURE_PER_THREAD; i++) {
 			calcThreads.put(i, new ArrayList<CalcThread>());
 		}
 		createNewThreads();
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 50; i++) {
 			createCreature();
 		}
 		th = new Thread(this);
@@ -42,16 +44,24 @@ public class CreatureManager implements Runnable {
 	
 	public void addCreature(Creature creature) {
 		creatures.put(creature, getFreeThread(creature));
+		if (creature.getGeneration() > maxGeneration) {
+			maxGeneration = creature.getGeneration();
+		}
 	}
 	
 	public void removeCreature(Creature creature) {
 		CalcThread ct = creatures.remove(creature);
-		if (ct != null) ct.removeCreature(creature);
+		if (ct != null) {
+			ct.removeCreature(creature);
+			moveCalcThread(ct, ct.getCreatureAmount());
+		}
 	}
 	
 	public void moveCalcThread(CalcThread ct, int newAmount) {
-		calcThreads.get(newAmount + 1).remove(ct);
-		calcThreads.get(newAmount).add(ct);
+		if (ct != null) {
+			if (calcThreads.get(newAmount + 1) != null) calcThreads.get(newAmount + 1).remove(ct);
+			if (calcThreads.get(newAmount) != null) calcThreads.get(newAmount).add(ct);
+		}
 	}
 	
 	private void createNewThreads() {
@@ -96,24 +106,31 @@ public class CreatureManager implements Runnable {
 		addCreature(new Creature(this));
 	}
 	
+	public Painter getPainter() {
+		return painter;
+	}
+
+	public void setPainter(Painter painter) {
+		this.painter = painter;
+	}
+	
 	public void paint() {
 		for (int i = 0; i <= Const.MAX_CREATURE_PER_THREAD; i++) {
 			for (CalcThread th : new ArrayList<CalcThread>(calcThreads.get(i))) {
 				if (th != null && painter != null) th.paintCreatures(painter);
 			}
 		}
+		System.out.println(creatures.size() + " Kreaturen in der " + maxGeneration + ". Generation.");
 	}
 	
 	@Override
 	public void run() {
-		long lastUpdate;
 		while (true) {
-			lastUpdate = System.currentTimeMillis();
 			update();
-			if (creatures.size() < 100) {
+			if (creatures.size() < 50) {
 				createCreature();
 			}
-			while (System.currentTimeMillis() - lastUpdate < sleepTime) {}
+			Helper.sleep(sleepTime);
 		}
 	}
 	

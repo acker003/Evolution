@@ -32,6 +32,10 @@ public class Helper {
 		return (float)Math.random();
 	}
 	
+	public static float randomPosNegFloat() {
+		return randomFloat() * 2 - 1;
+	}
+	
 	public static float sigmoid(float x) {
 		float et = (float)Math.pow(Math.E, x);
 		return (et / (1 + et)) * 2 - 1;
@@ -80,6 +84,15 @@ public class Helper {
 	
 	public static float euclidianDistance(float x1, float y1, float x2, float y2) {
 		return (float)Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+	}
+	
+	public static void sleep(long millis) {
+		long lastUpdate = System.currentTimeMillis();
+		while(System.currentTimeMillis() - lastUpdate < millis) {}
+	}
+	
+	public static float noise(double x, double y) {
+		return (float)SimplexNoise.noise(x, y);
 	}
 	
 }

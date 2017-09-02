@@ -3,9 +3,11 @@ package main;
 import creature.Creature;
 import data.Map;
 import data.Tile;
+import gui.CreaturePicker;
 import gui.Frame;
 import gui.Painter;
 import stuff.Const;
+import stuff.Helper;
 import stuff.Position;
 import update.CreatureManager;
 
@@ -22,6 +24,8 @@ public class Simulation implements Runnable {
 	private static Frame frame = new Frame(painter.getImage());
 	
 	public Simulation() {
+		frame.addKeyListener(painter);
+		frame.addMouseListener(new CreaturePicker(manager));
 		Thread th = new Thread(this);
 		th.start();
 	}
@@ -36,14 +40,13 @@ public class Simulation implements Runnable {
 
 	@Override
 	public void run() {
-		long lastUpdate;
 		while (true) {
 			map.update();
+			painter.clear();
 			map.paint();
 			manager.paint();
 			frame.update();
-			lastUpdate = System.currentTimeMillis();
-			while (System.currentTimeMillis() - lastUpdate < sleepTime) {}
+			Helper.sleep(sleepTime);
 		}
 	}
 }

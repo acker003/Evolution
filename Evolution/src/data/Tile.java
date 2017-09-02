@@ -17,7 +17,8 @@ public class Tile {
 			col = Color.blue;
 			break;
 		case LAND:
-			col = new Color(255, 255, 0);
+			food = (int)(0.4 * Const.MAXIMUM_FOOD_PER_TILE);
+			col = new Color((float)((255 - 2 * 100 / Const.MAXIMUM_FOOD_PER_TILE * food) / 255), 1, 0);
 			break;
 		default:
 			break;
@@ -26,6 +27,10 @@ public class Tile {
 	
 	public boolean isLand() {
 		return terrain == Terrain.LAND;
+	}
+	
+	public boolean isWater() {
+		return terrain == Terrain.WATER;
 	}
 	
 	public boolean reduceFood() {
@@ -38,8 +43,8 @@ public class Tile {
 	
 	public void increaseFood() {
 		if (isLand()) {
-			if (food <= Const.MAXIMUM_FOOD_PER_TILE - Const.NEW_FOOD_PER_FRAME) 
-				food += Const.NEW_FOOD_PER_FRAME;
+			food += Const.NEW_FOOD_PER_FRAME;
+			food = food > Const.MAXIMUM_FOOD_PER_TILE ? Const.MAXIMUM_FOOD_PER_TILE : food;
 			col = new Color((float)((255 - 2 * 100 / Const.MAXIMUM_FOOD_PER_TILE * food) / 255), 1, 0);
 		}
 	}
@@ -64,6 +69,10 @@ public class Tile {
 	
 	public Color getColor() {
 		return col;
+	}
+	
+	public void setColor(Color col) {
+		this.col = col;
 	}
 	
 	

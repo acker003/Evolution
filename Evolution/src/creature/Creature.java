@@ -1,9 +1,8 @@
 package creature;
 
 import java.awt.Color;
-import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import data.Terrain;
@@ -51,6 +50,9 @@ public class Creature {
 	private CreatureManager manager;
 	private NeuralNetwork brain;
 	
+	// Feeler
+	private List<Feeler> feelers = new ArrayList<Feeler>();
+	
 	public NeuralNetwork getBrain() {
 		return brain;
 	}
@@ -69,12 +71,14 @@ public class Creature {
 	private float age = 0;
 	private Color color = Helper.randomColor();
 	private int generation = 1;
+	private boolean isDead = false;
 	
 	
 	public Creature(CreatureManager manager) {
 		this.setManager(manager);
 		this.setId(currentID++);
 		initBrain();
+		//addFeeler(false, (float)(Helper.randomPosNegFloat() * Math.PI));
 	}
 	
 	public Creature(Creature mother) {
@@ -94,8 +98,11 @@ public class Creature {
 		outForward = brain.getOutputNeuronFromName(NAME_OUT_FORWARD);
 		outEat = brain.getOutputNeuronFromName(NAME_OUT_EAT);
 		
-		this.pos = mother.getPos();
-		this.viewAngle = mother.getViewAngle();
+		this.pos = new Position(mother.getPos().getX(), mother.getPos().getY());
+		this.viewAngle = (float)(mother.getViewAngle() + Math.PI);
+		for (Feeler f : mother.getFeelers()) {
+			addFeeler(true, f.getFeelerAngle());
+		}
 		doMutations(mother);
 	}
 	
@@ -135,9 +142,14 @@ public class Creature {
 		outEat.setName(NAME_OUT_EAT);
 	}
 
+	public void addFeeler(boolean isChild, float feelerAngle) {
+		feelers.add(new Feeler(this, feelers.size(), isChild, feelerAngle));
+	}
+	
 	private void doMutations(Creature mother) {
 		mutateConnections();
 		mutateColor(mother);
+		mutateFeeler();
 	}
 	
 	private void mutateConnections() {
@@ -154,6 +166,20 @@ public class Creature {
 		g = Helper.toIntervall(g + Helper.randomInt(-5, 5), 0, 255);
 		b = Helper.toIntervall(b + Helper.randomInt(-5, 5), 0, 255);
 		this.color = new Color(r, g, b);
+	}
+	
+	private void mutateFeeler() {
+		// New feeler
+		if (Math.random() < Const.CHANCE_FOR_NEW_FEELER && feelers.size() < Const.MAX_FEELER_AMOUNT) {
+			addFeeler(false, (float)(Helper.randomPosNegFloat() * Math.PI));
+		}
+		
+		// New feeler length
+		for (Feeler f : feelers) {
+			if (Math.random() < Const.CHANCE_FOR_FEELER_DISTANCE_MUTATION) {
+				f.setFeelerLength((float)(f.getFeelerLength() + 0.1 * Const.MAX_FEELER_DISTANCE * Helper.randomPosNegFloat()));
+			}
+		}
 	}
 	
 	public void readSensors() {
@@ -176,8 +202,13 @@ public class Creature {
 		float costMult = calculateCostMultiplier(tile);
 		actRotate(costMult, deltaTime);
 		actMove(costMult, deltaTime);
-		actBirth();
+		actBirth(costMult);
 		actEat(costMult, tile, deltaTime);
+		for (Feeler f : feelers) {
+			f.actFeelerRotate();
+			f.readSensors();
+			f.calcFeelerPos();
+		}
 		energy -= Const.COST_PER_FRAME * costMult * deltaTime;
 		age += deltaTime * Const.AGE_PER_FRAME;
 		
@@ -192,6 +223,7 @@ public class Creature {
 		
 		if (energy < 100 || tile.getTerrain() == Terrain.NOTHING) {
 			manager.removeCreature(this);
+			setDead(true);
 		}
 	}
 	
@@ -199,7 +231,7 @@ public class Creature {
 		float costMult = 1;
 		switch (tile.getTerrain()) {
 		case WATER:
-			costMult = 2;
+			costMult = 3;
 			break;
 		default:
 			break;
@@ -220,7 +252,7 @@ public class Creature {
 		float y = (float)(Math.cos(viewAngle) * deltaTime * speed 
 				* Const.MOVESPEED);
 		pos.move(x, y);
-		energy -= speed * Const.COST_WALK * deltaTime * costMult;
+		energy -= Math.abs(speed) * Const.COST_WALK * deltaTime * costMult;
 	}
 	
 	private void actEat(float costMult, Tile tile, float deltaTime) {
@@ -229,20 +261,20 @@ public class Creature {
 			if (tile.reduceFood()) {
 				energy += Const.GAIN_EAT * eatWish * deltaTime;
 			}
-			energy -= Const.COST_EAT * eatWish * deltaTime;
+			energy -= Const.COST_EAT * Math.abs(eatWish) * deltaTime;
 		}
 	}
 	
-	private void actBirth() {
+	private void actBirth(float costMult) {
 		// birth wish
 		if (outBirth.getValue() > 0) {
 			// enough energy
 			if (energy > Const.START_ENERGY + Const.MINIMUM_SURVIVAL_ENERGY 
 				* 1.1 && age >= Const.MIN_AGE_TO_GIVE_BIRTH) {
 				Creature child = new Creature(this);
+				child.setGeneration(this.generation + 1);
 				manager.addCreature(child);
-				System.out.println("Geburt! " + new Date(System.currentTimeMillis()));
-				energy -= Const.START_ENERGY;
+				energy -= Const.START_ENERGY * costMult;
 			}
 		}
 	}
@@ -325,6 +357,22 @@ public class Creature {
 
 	public void setSpeed(float speed) {
 		this.speed = speed;
+	}
+
+	public List<Feeler> getFeelers() {
+		return feelers;
+	}
+
+	public void setFeelers(List<Feeler> feelers) {
+		this.feelers = feelers;
+	}
+
+	public boolean isDead() {
+		return isDead;
+	}
+
+	public void setDead(boolean isDead) {
+		this.isDead = isDead;
 	}
 
 }
